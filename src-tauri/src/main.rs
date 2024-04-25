@@ -115,40 +115,29 @@ fn write_notes(notes: &[Note]) -> Result<(), Error> {
 }
 
 #[tauri::command]
-fn update_note(id: String, newTitle: String, new_description: String) {
-  // Convertir l'ID de String en i32
-  let id_i32: Result<i32, _> = id.parse();
+fn update_note(id: i32, new_title: String, new_description: String) {
+  // Appeler la fonction pour lire les notes
+  let notes_result = read_notes();
 
-  // Vérifier si la conversion a réussi
-  match id_i32 {
-    Ok(id_i32) => {
-      // Maintenant id_i32 est de type i32, vous pouvez l'utiliser
-      // Appeler la fonction pour lire les notes
-      let notes_result = read_notes();
-
-      // Vérifier si la lecture des notes a réussi
-      if let Ok(mut notes) = notes_result {
-        // Rechercher la note correspondant à l'ID donné
-        if let Some(note) = notes.iter_mut().find(|note| note.id == id_i32) {
-          // Mettre à jour le titre et la description de la note
-          note.title = newTitle;
-          note.description = new_description;
-          // Écrire les notes mises à jour dans le fichier
-          if let Err(err) = write_notes(&notes) {
-            println!("Failed to write updated notes: {}", err);
-          }
-        } else {
-          println!("Note with ID {} not found", id_i32);
-        }
-      } else {
-        println!("Error reading notes");
+  // Vérifier si la lecture des notes a réussi
+  if let Ok(mut notes) = notes_result {
+    // Trouver l'index de la note avec l'ID donné
+    if let Some(index) = notes.iter().position(|note| note.id == id) {
+      // Mettre à jour le titre et la description de la note
+      notes[index].title = new_title;
+      notes[index].description = new_description;
+      // Écrire les notes mises à jour dans le fichier
+      if let Err(err) = write_notes(&notes) {
+        println!("Failed to write updated notes: {}", err);
       }
+    } else {
+      println!("Note with ID {} not found", id);
     }
-    Err(_) => {
-      println!("Failed to parse ID as i32");
-    }
+  } else {
+    println!("Error reading notes");
   }
 }
+
 
 #[tauri::command]
 fn delete_note(id: String) {
@@ -158,8 +147,6 @@ fn delete_note(id: String) {
   // Vérifier si la conversion a réussi
   match id_i32 {
     Ok(id_i32) => {
-      // Maintenant id_i32 est de type i32, vous pouvez l'utiliser
-      // Appeler la fonction pour lire les notes
       let notes_result = read_notes();
 
       // Vérifier si la lecture des notes a réussi

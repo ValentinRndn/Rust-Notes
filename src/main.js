@@ -51,9 +51,9 @@ async function supprimerNote(noteId) {
 }
 
 // Fonction pour éditer une note
-function editNote(noteId) {
-  toggleModal();
-  const note = document.getElementById(noteId);
+async function editNote(noteId) {
+  const note = document.getElementById(nodeId);
+  console.log("Note sélectionnée :", note);
   const title = note.querySelector('h1').innerText;
   const content = note.querySelector('p').innerText;
 
@@ -63,15 +63,32 @@ function editNote(noteId) {
 
   // Stocker l'ID de la note sélectionnée dans un attribut de l'élément 'id'
   id.value = noteId;
+
+  // Afficher la fenêtre modale
+  toggleModal();
 }
 
-function updateNote() {
+// Fonction pour mettre à jour une note
+async function updateNote() {
   const noteId = id.value;
-  const note = document.getElementById(noteId);
-  note.querySelector('h1').innerText = titre.value;
-  note.querySelector('p').innerText = contenu.value;
+
+  try {
+    // Mettre à jour la note avec les nouvelles valeurs
+    const updatedNotes = await invoke('update_note', { id: noteId, newTitle: titre.value, newDescription: contenu.value });
+    console.log("Notes mises à jour :", updatedNotes);
+
+    // Mettre à jour la note dans le DOM
+    const noteElement = document.getElementById(`note-${noteId}`);
+    noteElement.querySelector('h1').innerText = titre.value;
+    noteElement.querySelector('p').innerText = contenu.value;
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de la note :", error);
+  }
+
+  // Masquer la fenêtre modale après la mise à jour
   toggleModal(); 
 }
+
 
 // Fonction pour afficher ou masquer la fenêtre modale
 function toggleModal() {
