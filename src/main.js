@@ -4,12 +4,16 @@ const addBox = document.querySelector('.add-box');
 const popupBox = document.querySelector('.popup-box');
 const titleTag = document.querySelector("#titre");
 const descTag = document.querySelector("#contenu");
+const addButton = document.querySelector('#addNote');
 const id = document.getElementById("id"); // Déclarer 'id' avant de l'utiliser
 let noteCount = 0;
 // Fonction pour créer une note
 function creerNote() {
   noteCount++; // Incrémenter le compteur de notes
-
+  const noteId = id.value;
+  if (noteId) {
+    updateNote(noteId);
+  }else {
   // Créer une div pour la note avec un ID unique basé sur le compteur de notes
   const note = document.createElement('div');
   note.id = `note-${noteCount}`;
@@ -34,6 +38,7 @@ function creerNote() {
   `;
   document.body.appendChild(note);
 } 
+}
 
 
 // Fonction pour supprimer une note
@@ -43,14 +48,30 @@ function supprimerNote(noteId) {
 }
 
 // Fonction pour éditer une note
-async function editNote(noteId) {
+function editNote(noteId) {
   toggleModal();
   const note = document.getElementById(noteId);
   const title = note.querySelector('h1').innerText;
   const content = note.querySelector('p').innerText;
-  titleTag.value = title;
-  descTag.value = content;
+
+  // Mise à jour des champs titre et contenu avec les valeurs de la note sélectionnée
+  titre.value = title;
+  contenu.value = content;
+
+  // Stocker l'ID de la note sélectionnée dans un attribut de l'élément 'id'
+  id.value = noteId;
 }
+
+function updateNote() {
+  const noteId = id.value;
+  const note = document.getElementById(noteId);
+  note.querySelector('h1').innerText = titre.value;
+  note.querySelector('p').innerText = contenu.value;
+  toggleModal(); 
+}
+
+
+
 
 function toggleModal() {
     document.getElementById('modal').classList.toggle('hidden');
