@@ -38,6 +38,7 @@ async function supprimerNote(noteId) {
   const { invoke } = window.__TAURI__.tauri;
 
   try {
+    console.log("Note à supprimer :", noteId);
     // Supprimer la note avec l'ID spécifié
     await invoke('delete_note_sql', { id: noteId });
     // Supprimer la note du DOM
@@ -52,7 +53,7 @@ async function supprimerNote(noteId) {
 
 // Fonction pour éditer une note
 async function editNote(noteId) {
-  const note = document.getElementById(nodeId);
+  const note = document.getElementById(noteId);
   console.log("Note sélectionnée :", note);
   const title = note.querySelector('h1').innerText;
   const content = note.querySelector('p').innerText;
@@ -102,7 +103,7 @@ function clearToggle() {
     descTag.value = '';
 }
 
-// Fonction pour intégrer le fichier json au front-end
+// Fonction pour intégrer les notes au front-end
 async function initialiseNotes() {
   try {
     const { invoke } = window.__TAURI__.tauri;
@@ -120,13 +121,13 @@ async function initialiseNotes() {
           <p class="text-slate-400">${note.description}</p>
         </div>
         <div class="right-content flex flex-col justify-center items-center gap-2">
-          <button class="hover:scale-125 duration-200" onclick="update_note_sql('${note.id}')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+        <button class="hover:scale-125 duration-200" onclick="editNote('${note.id}')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
               <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83l3.75 3.75z"/>
             </svg>
           </button>
-          <button class="hover:scale-125 duration-200" onclick="delete_note_sql('${note.id}')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+          <button class="hover:scale-125 duration-200" onclick="supprimerNote(${note.id})">                     
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
               <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12l1.41 1.41L13.41 14l2.12 2.12l-1.41 1.41L12 15.41l-2.12 2.12l-1.41-1.41L10.59 14zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/>
             </svg>
           </button>
