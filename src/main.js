@@ -16,11 +16,11 @@ async function creerNote() {
     if (noteId) {
       // Si l'ID de la note existe, mettre à jour la note existante
       await updateNote();
-      await invoke('update_note', { id: noteId, newTitle: titre.value, newDescription: contenu.value });
+      await invoke('update_note_sql', { id: noteId, title: titre.value, content: contenu.value });
     } else {
       // Sinon, créer une nouvelle note
-      const newNote = { title: titre.value, description: contenu.value };
-      const updatedNotes = await invoke('create_note', newNote);
+      const newNote = { title: titre.value, content: contenu.value };
+      const updatedNotes = await invoke('create_note_sqlite', newNote);
       // Traiter les données retournées si nécessaire
     }
 
@@ -39,7 +39,7 @@ async function supprimerNote(noteId) {
 
   try {
     // Supprimer la note avec l'ID spécifié
-    await invoke('delete_note', { id: noteId });
+    await invoke('delete_note_sql', { id: noteId });
     // Supprimer la note du DOM
     const noteElement = document.getElementById(noteId);
     if (noteElement) {
@@ -74,7 +74,7 @@ async function updateNote() {
 
   try {
     // Mettre à jour la note avec les nouvelles valeurs
-    const updatedNotes = await invoke('update_note', { id: noteId, newTitle: titre.value, newDescription: contenu.value });
+    const updatedNotes = await invoke('update_note_sql', { id: noteId, newTitle: titre.value, newDescription: contenu.value });
     console.log("Notes mises à jour :", updatedNotes);
 
     // Mettre à jour la note dans le DOM

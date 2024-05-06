@@ -2,8 +2,7 @@ use std::io::Error;
 use std::fs;
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize}; // Importation des traits Serialize et Deserialize
-// use rusqlite::{params, Connection, Result};
-
+use rusqlite::{params, Connection, Result, Error as RusqliteError}; // Renommer l'importation de rusqlite::Error
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct Note {
@@ -172,10 +171,99 @@ fn delete_note(id: String) {
   }
 }
 
+fn init_db() -> Result<(), rusqlite::Error> {
+  // Vérifier si la base de données existe déjà
+  let db_exists = std::path::Path::new("notes.db").exists();
+
+  // Ouvrir la connexion à la base de données
+  let conn = Connection::open("notes.db")?;
+
+  // Si la base de données n'existe pas, créer la table
+  if !db_exists {
+      conn.execute(
+          "CREATE TABLE IF NOT EXISTS notes (
+              id INTEGER PRIMARY KEY,
+              title TEXT NOT NULL,
+              content TEXT NOT NULL,
+              date TEXT NOT NULL
+          )",
+          [],
+      )?;
+  }
+
+  Ok(())
+}
+
+
+
+#[tauri::command]
+fn create_note_sqlite(title: &str, content: &str) -> bool {
+    let conn = Connection::open("notes.db").expect("Erreur lors de l'ouverture de la connexion à la base de données");
+    let date = Utc::now();
+    let date_str = date.format("%d/%m/%Y").to_string();
+    match conn.execute(
+        "INSERT INTO notes (title, content, date) VALUES (?1, ?2, ?3)",
+        params![title, content, date_str],
+    ) {
+        Ok(rows_affected) => rows_affected == 1,
+        Err(_) => false, // Gérer l'erreur ici, par exemple journaliser l'erreur
+    }
+}
+
+#[tauri::command]
+fn get_notes() -> Result<Vec<Note>, String> {
+  let conn = Connection::open("notes.db").map_err(|err| format!("Erreur lors de l'ouverture de la connexion à la base de données : {}", err))?;
+  let mut stmt = conn.prepare("SELECT id, title, content, date FROM notes").map_err(|err| format!("Erreur lors de la préparation de la requête SQL : {}", err))?;
+  
+  let notes_iter = stmt.query_map([], |row| {
+      Ok(Note {
+          id: row.get(0)?,
+          title: row.get(1)?,
+          description: row.get(2)?,
+          date: row.get(3)?,
+      })
+  }).map_err(|err| format!("Erreur lors de l'exécution de la requête SQL : {}", err))?;
+
+  let mut notes = Vec::new();
+  for note in notes_iter {
+      notes.push(note.map_err(|err| format!("Erreur lors de la collecte des résultats : {}", err))?);
+  }
+
+  Ok(notes)
+}
+
+
+#[tauri::command]
+fn update_note_sql(title: String, content: String, id: i64) -> bool {
+    let conn = Connection::open("notes.db").expect("Erreur lors de l'ouverture de la connexion à la base de données");
+    match conn.execute(
+        "UPDATE notes SET title = ?1, content = ?2 WHERE id = ?3",
+        params![title, content, id],
+    ) {
+        Ok(rows_affected) => rows_affected == 1,
+        Err(_) => false, // Gérer l'erreur ici, par exemple journaliser l'erreur
+    }
+}
+
+#[tauri::command]
+fn delete_note_sql(id: i64) -> bool {
+    let conn = Connection::open("notes.db").expect("Erreur lors de l'ouverture de la connexion à la base de données");
+    match conn.execute("DELETE FROM notes WHERE id = ?1", params![id]) {
+        Ok(rows_affected) => rows_affected == 1,
+        Err(_) => false, // Gérer l'erreur ici, par exemple journaliser l'erreur
+    }
+}
+
+
 
 fn main() {
+ 
+  // let Connection::open("notes.db")?;
+  init_db().expect("Erreur lors de l'initialisation de la base de données");
+  // create_note_sqlite("J'aime Eva", "Je l'allume");
+
   tauri::Builder::default()
       .invoke_handler(tauri::generate_handler![create_note, fetch_notes,update_note,delete_note])
       .run(tauri::generate_context!())
       .expect("erreur lors de l'exécution de l'application Tauri");
-}
+} 
