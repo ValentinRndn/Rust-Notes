@@ -211,7 +211,7 @@ fn create_note_sqlite(title: &str, content: &str) -> bool {
 }
 
 #[tauri::command]
-fn get_notes() -> Result<Vec<Note>, String> {
+fn get_notes_sql() -> Result<Vec<Note>, String> {
   let conn = Connection::open("notes.db").map_err(|err| format!("Erreur lors de l'ouverture de la connexion à la base de données : {}", err))?;
   let mut stmt = conn.prepare("SELECT id, title, content, date FROM notes").map_err(|err| format!("Erreur lors de la préparation de la requête SQL : {}", err))?;
   
@@ -260,10 +260,10 @@ fn main() {
  
   // let Connection::open("notes.db")?;
   init_db().expect("Erreur lors de l'initialisation de la base de données");
-  // create_note_sqlite("J'aime Eva", "Je l'allume");
+  // create_note_sqlite("test", "test");
 
   tauri::Builder::default()
-      .invoke_handler(tauri::generate_handler![create_note, fetch_notes,update_note,delete_note])
+      .invoke_handler(tauri::generate_handler![create_note_sqlite, fetch_notes,update_note_sql,delete_note_sql,get_notes_sql])
       .run(tauri::generate_context!())
       .expect("erreur lors de l'exécution de l'application Tauri");
 } 

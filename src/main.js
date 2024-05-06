@@ -74,7 +74,7 @@ async function updateNote() {
 
   try {
     // Mettre à jour la note avec les nouvelles valeurs
-    const updatedNotes = await invoke('update_note_sql', { id: noteId, newTitle: titre.value, newDescription: contenu.value });
+    const updatedNotes = await invoke('update_note_sql', { id: noteId, title: titre.value, content: contenu.value });
     console.log("Notes mises à jour :", updatedNotes);
 
     // Mettre à jour la note dans le DOM
@@ -107,7 +107,7 @@ async function initialiseNotes() {
   try {
     const { invoke } = window.__TAURI__.tauri;
     // Appeler la commande back-end pour récupérer les notes
-    const notes = await invoke("fetch_notes");
+    const notes = await invoke("get_notes_sql");
     
     // Traiter les notes récupérées
     notes.forEach((note) => {
@@ -120,12 +120,12 @@ async function initialiseNotes() {
           <p class="text-slate-400">${note.description}</p>
         </div>
         <div class="right-content flex flex-col justify-center items-center gap-2">
-          <button class="hover:scale-125 duration-200" onclick="editNote('${note.id}')">
+          <button class="hover:scale-125 duration-200" onclick="update_note_sql('${note.id}')">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
               <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83l3.75 3.75z"/>
             </svg>
           </button>
-          <button class="hover:scale-125 duration-200" onclick="supprimerNote('${note.id}')">
+          <button class="hover:scale-125 duration-200" onclick="delete_note_sql('${note.id}')">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
               <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6zm2.46-7.12l1.41-1.41L12 12.59l2.12-2.12l1.41 1.41L13.41 14l2.12 2.12l-1.41 1.41L12 15.41l-2.12 2.12l-1.41-1.41L10.59 14zM15.5 4l-1-1h-5l-1 1H5v2h14V4z"/>
             </svg>
