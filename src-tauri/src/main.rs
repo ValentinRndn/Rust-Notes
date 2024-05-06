@@ -299,7 +299,7 @@ fn update_note_sql(title: String, content: String, id: i64) -> bool {
         params![title, content, id],
     ) {
         Ok(rows_affected) => rows_affected == 1,
-        Err(_) => false, 
+        Err(_) => false, // Gérer l'erreur ici, par exemple journaliser l'erreur
     }
 }
 
@@ -308,7 +308,7 @@ fn delete_note_sql(id: i64) -> bool {
     let conn = Connection::open("notes.db").expect("Erreur lors de l'ouverture de la connexion à la base de données");
     match conn.execute("DELETE FROM notes WHERE id = ?1", params![id]) {
         Ok(rows_affected) => rows_affected == 1,
-        Err(_) => false, 
+        Err(_) => false, // Gérer l'erreur ici, par exemple journaliser l'erreur
     }
 }
 
@@ -316,7 +316,7 @@ fn delete_note_sql(id: i64) -> bool {
 #[tauri::command]
 async fn generate_random_poem(prompt: &str) -> Result<String, String> {
     // Clé d'API OpenAI
-    let api_key = dotenv::var("OPENAI_API_KEY").map_err(|e| e.to_string())?;
+    let api_key = "Aremplacer";
 
     // Création de la requête
     let client = reqwest::Client::new();
@@ -337,12 +337,15 @@ async fn generate_random_poem(prompt: &str) -> Result<String, String> {
     // Traitement de la réponse
     match response {
         Ok(response) => {
-            let poem_response: PoemResponse = response.json().await.map_err(|e| e.to_string())?;
-            Ok(poem_response.text)
+            let completion: Completion = response.json().await.map_err(|e| e.to_string())?;
+            let poem = completion.choices[0].text.clone();
+            Ok(poem)
         }
         Err(e) => Err(e.to_string()),
     }
 }
+
+
 
 
 fn main() {
