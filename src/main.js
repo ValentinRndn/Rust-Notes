@@ -153,3 +153,24 @@ async function initialiseNotes() {
 (async function init() {
   await initialiseNotes();
 })();
+
+
+async function afficherPoeme() {
+  const { invoke } = window.__TAURI__.tauri;
+
+  try {
+    // Appeler la commande Rust pour générer un poème aléatoire
+    const poeme = await invoke('generate_random_poem', { prompt: 'Écris un poème aléatoire' });
+    
+    // Afficher le poème dans l'interface utilisateur
+    document.getElementById('poeme-container').innerText = poeme;
+    
+    console.log("Poème généré avec succès :", poeme);
+  } catch (error) {
+    // Gérer les erreurs éventuelles
+    console.error('Erreur lors de la récupération du poème :', error);
+  }
+}
+
+// Appeler la fonction pour afficher le poème lors du chargement de la page
+afficherPoeme();

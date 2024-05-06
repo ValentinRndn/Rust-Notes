@@ -3,6 +3,10 @@ use std::fs;
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize}; // Importation des traits Serialize et Deserialize
 use rusqlite::{params, Connection, Result, Error as RusqliteError}; // Renommer l'importation de rusqlite::Error
+extern crate dotenv;
+use reqwest;
+use dotenv::dotenv;
+use std::env;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct Note {
@@ -10,6 +14,37 @@ struct Note {
   title: String,
   content: String,
   date: String,
+}
+
+// Structure pour stocker la réponse de l'API
+#[derive(Debug, Serialize, Deserialize)]
+struct Completion {
+    id: String,
+    object: String,
+    model: Model,
+    choices: Vec<Choice>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Model {
+    id: String,
+    object: String,
+    created: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Choice {
+    text: String,
+    index: i64,
+    logprobs: Logprobs,
+    finish_reason: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Logprobs {
+    tokens: Vec<String>,
+    token_logprobs: Vec<f64>,
+    text_offset: Vec<i64>,
 }
 
 // Fonction pour créer une nouvelle note et la stocker dans un fichier JSON
@@ -264,7 +299,7 @@ fn update_note_sql(title: String, content: String, id: i64) -> bool {
         params![title, content, id],
     ) {
         Ok(rows_affected) => rows_affected == 1,
-        Err(_) => false, // Gérer l'erreur ici, par exemple journaliser l'erreur
+        Err(_) => false, 
     }
 }
 
@@ -273,20 +308,48 @@ fn delete_note_sql(id: i64) -> bool {
     let conn = Connection::open("notes.db").expect("Erreur lors de l'ouverture de la connexion à la base de données");
     match conn.execute("DELETE FROM notes WHERE id = ?1", params![id]) {
         Ok(rows_affected) => rows_affected == 1,
-        Err(_) => false, // Gérer l'erreur ici, par exemple journaliser l'erreur
+        Err(_) => false, 
     }
 }
 
 
+#[tauri::command]
+async fn generate_random_poem(prompt: &str) -> Result<String, String> {
+    // Clé d'API OpenAI
+    let api_key = dotenv::var("OPENAI_API_KEY").map_err(|e| e.to_string())?;
+
+    // Création de la requête
+    let client = reqwest::Client::new();
+    let response = client
+        .post("https://api.openai.com/v1/completions")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", api_key))
+        .json(&serde_json::json!({
+            "prompt": prompt,
+            "max_tokens": 100,
+            "temperature": 0.7,
+            "top_p": 1.0,
+            "n": 1
+        }))
+        .send()
+        .await;
+
+    // Traitement de la réponse
+    match response {
+        Ok(response) => {
+            let poem_response: PoemResponse = response.json().await.map_err(|e| e.to_string())?;
+            Ok(poem_response.text)
+        }
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 
 fn main() {
  
-  // let Connection::open("notes.db")?;
   init_db().expect("Erreur lors de l'initialisation de la base de données");
-  // create_note_sqlite("test", "test");
-
   tauri::Builder::default()
-      .invoke_handler(tauri::generate_handler![create_note_sqlite, fetch_notes,update_note_sql,delete_note_sql,get_notes_sql, get_note_sql])
+      .invoke_handler(tauri::generate_handler![create_note_sqlite, fetch_notes,update_note_sql,delete_note_sql,get_notes_sql, get_note_sql, generate_random_poem])
       .run(tauri::generate_context!())
       .expect("erreur lors de l'exécution de l'application Tauri");
 } 
