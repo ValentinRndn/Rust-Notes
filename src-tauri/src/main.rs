@@ -8,13 +8,13 @@ use rusqlite::{params, Connection, Result, Error as RusqliteError}; // Renommer 
 struct Note {
   id: i32,
   title: String,
-  description: String,
+  content: String,
   date: String,
 }
 
 // Fonction pour créer une nouvelle note et la stocker dans un fichier JSON
 #[tauri::command]
-fn create_note(title: String, description: String) -> Result<Vec<Note>, String> {
+fn create_note(title: String, content: String) -> Result<Vec<Note>, String> {
   // Créer la nouvelle note
   let id = generate_unique_id();
   let date = Utc::now();
@@ -23,7 +23,7 @@ fn create_note(title: String, description: String) -> Result<Vec<Note>, String> 
   let new_note = Note {
     id,
     title,
-    description,
+    content,
     date: date_str,
   };
 
@@ -114,7 +114,7 @@ fn write_notes(notes: &[Note]) -> Result<(), Error> {
 }
 
 #[tauri::command]
-fn update_note(id: i32, new_title: String, new_description: String) {
+fn update_note(id: i32, new_title: String, new_content: String) {
   // Appeler la fonction pour lire les notes
   let notes_result = read_notes();
 
@@ -122,9 +122,9 @@ fn update_note(id: i32, new_title: String, new_description: String) {
   if let Ok(mut notes) = notes_result {
     // Trouver l'index de la note avec l'ID donné
     if let Some(index) = notes.iter().position(|note| note.id == id) {
-      // Mettre à jour le titre et la description de la note
+      // Mettre à jour le titre et la content de la note
       notes[index].title = new_title;
-      notes[index].description = new_description;
+      notes[index].content = new_content;
       // Écrire les notes mises à jour dans le fichier
       if let Err(err) = write_notes(&notes) {
         println!("Failed to write updated notes: {}", err);
@@ -219,7 +219,7 @@ fn get_notes_sql() -> Result<Vec<Note>, String> {
       Ok(Note {
           id: row.get(0)?,
           title: row.get(1)?,
-          description: row.get(2)?,
+          content: row.get(2)?,
           date: row.get(3)?,
       })
   }).map_err(|err| format!("Erreur lors de l'exécution de la requête SQL : {}", err))?;
@@ -230,6 +230,29 @@ fn get_notes_sql() -> Result<Vec<Note>, String> {
   }
 
   Ok(notes)
+}
+
+#[tauri::command]
+fn get_note_sql(id: i64) -> Result<Option<Note>, String> {
+    // Connexion à la base de données
+    let conn = Connection::open("notes.db").map_err(|err| format!("Erreur lors de l'ouverture de la connexion à la base de données : {}", err))?;
+
+    // Préparer la requête SQL pour récupérer la note avec l'ID spécifié
+    let mut stmt = conn.prepare("SELECT id, title, content, date FROM notes WHERE id = ?1").map_err(|err| format!("Erreur lors de la préparation de la requête SQL : {}", err))?;
+
+    // Exécuter la requête SQL avec l'ID spécifié en tant que paramètre
+    let note_iter = stmt.query_map(params![id], |row| {
+        Ok(Note {
+            id: row.get(0)?,
+            title: row.get(1)?,
+            content: row.get(2)?,
+            date: row.get(3)?,
+        })
+    }).map_err(|err| format!("Erreur lors de l'exécution de la requête SQL : {}", err))?;
+
+    // Récupérer la première note (s'il y en a une) ou renvoyer None si aucune note n'a été trouvée avec cet ID
+    let mut notes = note_iter.collect::<Result<Vec<_>, _>>().map_err(|err| format!("Erreur lors de la collecte des résultats : {}", err))?;
+    Ok(notes.pop())
 }
 
 
@@ -263,7 +286,7 @@ fn main() {
   // create_note_sqlite("test", "test");
 
   tauri::Builder::default()
-      .invoke_handler(tauri::generate_handler![create_note_sqlite, fetch_notes,update_note_sql,delete_note_sql,get_notes_sql])
+      .invoke_handler(tauri::generate_handler![create_note_sqlite, fetch_notes,update_note_sql,delete_note_sql,get_notes_sql, get_note_sql])
       .run(tauri::generate_context!())
       .expect("erreur lors de l'exécution de l'application Tauri");
 } 

@@ -21,7 +21,6 @@ async function creerNote() {
       // Sinon, créer une nouvelle note
       const newNote = { title: titre.value, content: contenu.value };
       const updatedNotes = await invoke('create_note_sqlite', newNote);
-      // Traiter les données retournées si nécessaire
     }
 
     // Réinitialiser les champs après l'ajout ou la mise à jour de la note
@@ -53,12 +52,21 @@ async function supprimerNote(noteId) {
 
 // Fonction pour éditer une note
 async function editNote(noteId) {
+
+  // Récupérer la note sélectionnée  
+
   const note = document.getElementById(noteId);
+  console.log("Note sélectionnée :", note);
+  if (!note) {
+    console.error("Note non trouvée :", noteId);
+    return;
+  }
+
   console.log("Note sélectionnée :", note);
   const title = note.querySelector('h1').innerText;
   const content = note.querySelector('p').innerText;
 
-  // Mise à jour des champs titre et contenu avec les valeurs de la note sélectionnée
+  // Remplir les champs titre et contenu avec les valeurs de la note sélectionnée
   titre.value = title;
   contenu.value = content;
 
@@ -69,26 +77,26 @@ async function editNote(noteId) {
   toggleModal();
 }
 
+
 // Fonction pour mettre à jour une note
-async function updateNote() {
-  const noteId = id.value;
-
+async function updateNote(noteId, newTitle, newContent) {
   try {
-    // Mettre à jour la note avec les nouvelles valeurs
-    const updatedNotes = await invoke('update_note_sql', { id: noteId, title: titre.value, content: contenu.value });
-    console.log("Notes mises à jour :", updatedNotes);
-
-    // Mettre à jour la note dans le DOM
-    const noteElement = document.getElementById(`note-${noteId}`);
-    noteElement.querySelector('h1').innerText = titre.value;
-    noteElement.querySelector('p').innerText = contenu.value;
+    // Appeler la méthode Rust pour mettre à jour la note avec les nouvelles valeurs
+    const success = await invoke('update_note_sql', { title: newTitle, content: newContent, id: noteId });
+    
+    if (success) {
+      console.log('Note mise à jour avec succès');
+      // Mettre à jour la note dans le DOM si nécessaire
+      // Vous pouvez ajouter du code ici pour mettre à jour l'affichage de la note dans l'interface utilisateur
+    } else {
+      console.error('Erreur lors de la mise à jour de la note : La note n\'a pas été mise à jour');
+    }
   } catch (error) {
-    console.error("Erreur lors de la mise à jour de la note :", error);
+    console.error('Erreur lors de la mise à jour de la note :', error);
   }
-
-  // Masquer la fenêtre modale après la mise à jour
-  toggleModal(); 
 }
+
+
 
 
 // Fonction pour afficher ou masquer la fenêtre modale
